@@ -1,12 +1,14 @@
 # Business Source License 1.1
 
-## Parameters
+## License Parameters
 
-- **Licensor:** Abraham Winston O
-- **Licensed Work:** The GRP 5 Secure HMI Software and associated documentation.
-- **Change Date:** 2030-12-28
-- **Change License:** GNU General Public License v2.0 or later
-- **Additional Use Grant:** You may use the Licensed Work for non-commercial educational purposes, personal home automation testing, and academic research without restriction.
+| Parameter | Value |
+|-----------|-------|
+| **Licensor** | Abraham Winston O |
+| **Licensed Work** | The GRP 5 Secure HMI Software and associated documentation |
+| **Change Date** | 2030-12-28 |
+| **Change License** | GNU General Public License v2.0 or later |
+| **Additional Use Grant** | Non-commercial educational purposes, personal home automation testing, and academic research without restriction |
 
 ---
 
@@ -16,11 +18,11 @@ The Licensor hereby grants you the right to copy, modify, create derivative work
 
 ### 1. Grant of Rights
 
-Each person or entity ("You") receiving a copy of the Licensed Work is hereby granted a non-exclusive, royalty-free, revocable, non-transferable, and non-sublicensable license to the Licensed Work, for the purposes of the Additional Use Grant.
+Each person or entity ("You") receiving a copy of the Licensed Work is hereby granted a non-exclusive, royalty-free, revocable, non-transferable, and non-sublicensable license to the Licensed Work.
 
 ### 2. Change to Open Source
 
-On the Change Date, or such earlier date as the Licensor may specify, the Licensed Work shall become subject to the Change License. From and after the Change Date, the terms of this License shall no longer apply, and the Licensed Work shall be governed solely by the Change License.
+On the Change Date, or such earlier date as the Licensor may specify, the Licensed Work shall become subject to the Change License. From and after the Change Date, the terms of this License shall no longer apply.
 
 ### 3. Restrictions
 
@@ -28,7 +30,7 @@ You may not use the Licensed Work for any purpose other than the Additional Use 
 
 ### 4. No Warranty
 
-TO THE EXTENT PERMITTED BY APPLICABLE LAW, THE LICENSED WORK IS PROVIDED "AS IS" WITHOUT ANY WARRANTIES. THE LICENSOR DISCLAIMS ALL IMPLIED WARRANTIES, INCLUDING ANY WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT.
+TO THE EXTENT PERMITTED BY APPLICABLE LAW, THE LICENSED WORK IS PROVIDED "AS IS" WITHOUT ANY WARRANTIES. THE LICENSOR DISCLAIMS ALL IMPLIED WARRANTIES, INCLUDING ANY WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
 
 ### 5. Limitation of Liability
 
@@ -36,7 +38,7 @@ IN NO EVENT SHALL THE LICENSOR BE LIABLE FOR ANY DAMAGES, INCLUDING DIRECT, INDI
 
 ---
 
-## Implementation Advice
+## Implementation Notes
 
 ### Standalone Operation
 
