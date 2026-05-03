@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>G5 Smart Home HMI</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07090f;--panel:#0e1320;--card:#111827;--card2:#161f30;
+  --accent:#00f5c4;--accent2:#00c8ff;--accent3:#a78bfa;
+  --warn:#ffb03a;--danger:#ff4d4d;--success:#22c55e;
+  --text:#dce8f5;--muted:#4a6080;--border:#1a2a3d;
+  --glow:0 0 22px rgba(0,245,196,.45);
+  --glow2:0 0 22px rgba(0,200,255,.45);
+  --glow3:0 0 22px rgba(167,139,250,.45);
+  --wglow:0 0 22px rgba(255,176,58,.45);
+  --dglow:0 0 28px rgba(255,77,77,.6);
+  --fire-glow:0 0 32px rgba(255,77,77,.8);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  color:var(--text);font-family:'Rajdhani',sans-serif;
+  min-height:100vh;overflow-x:hidden;
+  background:
+    radial-gradient(ellipse 80% 60% at 15% 5%, rgba(0,245,196,.09) 0%, transparent 60%),
+    radial-gradient(ellipse 70% 50% at 85% 95%, rgba(0,200,255,.09) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 50% 50%, rgba(167,139,250,.04) 0%, transparent 65%),
+    linear-gradient(160deg,#07090f 0%,#0a0f1e 50%,#07090f 100%);
+  background-attachment:fixed;
+}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:
+    linear-gradient(rgba(0,245,196,.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,245,196,.03) 1px,transparent 1px);
+  background-size:40px 40px;
+}
+body::after{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse 100% 60% at 50% 0%,rgba(0,200,255,.06) 0%,transparent 70%);
+}
+/* -- FIRE OVERLAY -- */
+#fire-overlay{
+  display:none;position:fixed;inset:0;z-index:999;pointer-events:none;
+  background:rgba(255,30,0,.08);
+  animation:fireFlash .4s ease-in-out infinite alternate;
+}
+@keyframes fireFlash{from{opacity:0}to{opacity:1}}
+/* -- PIN GATE OVERLAY -- */
+#pin-gate{
+  display:none;position:fixed;inset:0;z-index:9999;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 10%,rgba(167,139,250,.13) 0%,transparent 60%),
+    radial-gradient(ellipse 70% 50% at 80% 90%,rgba(0,200,255,.11) 0%,transparent 60%),
+    linear-gradient(160deg,#07090f 0%,#0a0f1e 50%,#07090f 100%);
+  align-items:center;justify-content:center;
+}
+#pin-gate.show{display:flex;}
+.pg-box{
+  background:linear-gradient(145deg,#0e1320,#111827);
+  border:1px solid rgba(167,139,250,.35);border-radius:22px;
+  padding:36px 32px 28px;width:310px;max-width:92vw;
+  box-shadow:0 0 60px rgba(167,139,250,.18),0 0 120px rgba(0,0,0,.6);
+  text-align:center;
+}
+.pg-logo{
+  font-size:1rem;font-weight:700;letter-spacing:4px;text-transform:uppercase;
+  background:linear-gradient(90deg,var(--accent),var(--accent2),var(--accent3));
+  background-size:200%;animation:logoShift 6s linear infinite;
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  margin-bottom:4px;
+}
+.pg-sub{font-size:.6rem;color:var(--muted);letter-spacing:2.5px;margin-bottom:22px;}
+.pg-icon{font-size:2.8rem;margin-bottom:14px;}
+.pg-title{font-size:.65rem;letter-spacing:2.5px;color:var(--accent3);text-transform:uppercase;margin-bottom:16px;}
+.pg-dots{display:flex;gap:14px;justify-content:center;margin-bottom:10px;}
+.pg-msg{font-size:.7rem;font-weight:700;letter-spacing:1.5px;min-height:20px;margin-bottom:10px;color:var(--danger);}
+.pg-kp{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:6px;}
+.pgk{
+  border:1px solid var(--border);border-radius:11px;
+  background:linear-gradient(145deg,#161f30,#111827);
+  color:var(--text);font-family:'Share Tech Mono',monospace;font-size:1.15rem;
+  font-weight:700;padding:14px 0;cursor:pointer;transition:all .15s;
+}
+.pgk:hover{
+  background:linear-gradient(145deg,rgba(167,139,250,.18),rgba(0,200,255,.1));
+  border-color:rgba(167,139,250,.4);color:var(--accent3);
+  box-shadow:0 0 14px rgba(167,139,250,.2);
+}
+.pgk:active{transform:scale(.94);}
+.pgk.pgk-del{color:var(--warn);border-color:rgba(255,176,58,.25);}
+.pgk.pgk-del:hover{background:rgba(255,176,58,.12);border-color:rgba(255,176,58,.4);}
+.pgk.pgk-clr{color:var(--danger);border-color:rgba(255,77,77,.25);}
+.pgk.pgk-clr:hover{background:rgba(255,77,77,.1);border-color:rgba(255,77,77,.4);}
+/* -- HEADER -- */
+.hdr{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 24px;
+  background:linear-gradient(90deg,rgba(0,245,196,.07),rgba(0,200,255,.07));
+  backdrop-filter:blur(14px);
+  border-bottom:1px solid rgba(0,245,196,.15);
+  position:sticky;top:0;z-index:50;
+}
+.logo{
+  font-size:1.1rem;font-weight:700;letter-spacing:4px;text-transform:uppercase;
+  background:linear-gradient(90deg,var(--accent),var(--accent2),var(--accent3));
+  background-size:200%;animation:logoShift 6s linear infinite;
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+@keyframes logoShift{0%{background-position:0%}100%{background-position:200%}}
+.sub{font-size:.58rem;color:var(--muted);letter-spacing:2px;margin-top:1px;}
+.hdr-r{display:flex;align-items:center;gap:12px;font-family:'Share Tech Mono',monospace;font-size:.75rem;}
+.ip-badge{
+  background:rgba(0,245,196,.08);border:1px solid rgba(0,245,196,.25);
+  padding:3px 10px;border-radius:4px;color:var(--accent);letter-spacing:1px;
+}
+.clk{color:var(--muted);}
+.wdot{width:9px;height:9px;border-radius:50%;background:var(--accent);
+  box-shadow:0 0 8px var(--accent);animation:blink 2s infinite;}
+.wdot.off{background:var(--danger);box-shadow:0 0 8px var(--danger);animation:none;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+/* -- TAB BAR -- */
+.tabbar{
+  display:flex;gap:4px;padding:10px 20px 0;
+  background:transparent;position:relative;z-index:10;
+}
+.tab{
+  padding:7px 18px;border-radius:10px 10px 0 0;cursor:pointer;
+  font-weight:700;font-size:.75rem;letter-spacing:2px;text-transform:uppercase;
+  border:1px solid var(--border);border-bottom:none;
+  background:rgba(255,255,255,.02);color:var(--muted);
+  transition:all .2s;
+}
+.tab:hover{color:var(--text);background:rgba(255,255,255,.04);}
+.tab.active{
+  background:linear-gradient(180deg,rgba(0,245,196,.12),rgba(0,245,196,.04));
+  color:var(--accent);border-color:rgba(0,245,196,.3);
+  border-bottom:1px solid var(--card);
+  box-shadow:0 -4px 14px rgba(0,245,196,.15);
+}
+.tab-sec.active{
+  background:linear-gradient(180deg,rgba(167,139,250,.12),rgba(167,139,250,.04));
+  color:var(--accent3);border-color:rgba(167,139,250,.3);
+  box-shadow:0 -4px 14px rgba(167,139,250,.15);
+}
+.tabcontent{display:none;position:relative;z-index:5;}
+.tabcontent.active{display:block;}
+/* -- GRID -- */
+.grid{display:grid;gap:13px;padding:16px 20px;
+  grid-template-columns:repeat(auto-fill,minmax(200px,1fr));}
+.span2{grid-column:span 2;}
+/* -- CARD -- */
+.card{
+  background:linear-gradient(145deg,var(--card),var(--card2));
+  border:1px solid var(--border);border-radius:16px;
+  padding:15px;transition:box-shadow .3s,border-color .3s,transform .2s;
+  position:relative;overflow:hidden;
+}
+.card::before{
+  content:'';position:absolute;inset:0;border-radius:16px;
+  background:linear-gradient(135deg,rgba(255,255,255,.03) 0%,transparent 60%);
+  pointer-events:none;
+}
+.card:hover{transform:translateY(-1px);}
+.card.g-green{box-shadow:var(--glow);border-color:rgba(0,245,196,.4);}
+.card.g-blue {box-shadow:var(--glow2);border-color:rgba(0,200,255,.4);}
+.card.g-purple{box-shadow:var(--glow3);border-color:rgba(167,139,250,.4);}
+.card.g-warn {box-shadow:var(--wglow);border-color:rgba(255,176,58,.4);}
+.card.g-red  {box-shadow:var(--dglow);border-color:rgba(255,77,77,.45);}
+.card.g-fire{
+  box-shadow:var(--fire-glow);border-color:rgba(255,77,77,.7);
+  animation:firePulse .5s ease-in-out infinite alternate;
+}
+@keyframes firePulse{
+  from{box-shadow:0 0 20px rgba(255,77,77,.5);border-color:rgba(255,77,77,.5);}
+  to{box-shadow:0 0 50px rgba(255,120,0,.9);border-color:rgba(255,120,0,.8);}
+}
+.card.g-putoff{
+  box-shadow:0 0 22px rgba(0,200,255,.6);border-color:rgba(0,200,255,.6);
+  animation:putoffPulse 1s ease-in-out infinite alternate;
+}
+@keyframes putoffPulse{
+  from{box-shadow:0 0 18px rgba(0,200,255,.4);}
+  to{box-shadow:0 0 35px rgba(0,200,255,.8);}
+}
+/* -- CARD TITLE -- */
+.ct{
+  font-size:.6rem;letter-spacing:3px;color:var(--muted);
+  text-transform:uppercase;margin-bottom:11px;
+  display:flex;align-items:center;gap:6px;
+}
+.ct::before{content:'';width:14px;height:2px;border-radius:1px;
+  background:linear-gradient(90deg,var(--accent),transparent);}
+/* -- ICON ROW -- */
+.ir{display:flex;align-items:center;gap:11px;margin-bottom:9px;}
+.ico{font-size:1.8rem;line-height:1;transition:.25s;}
+.ico.spin{animation:spin 1.1s linear infinite;}
+.ico.throb{animation:throb .65s ease-in-out infinite;}
+.ico.fire-dance{animation:fireDance .3s ease-in-out infinite alternate;}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes throb{0%,100%{transform:scale(1)}50%{transform:scale(1.25)}}
+@keyframes fireDance{
+  from{transform:scale(1) rotate(-3deg);}
+  to{transform:scale(1.3) rotate(3deg);}
+}
+/* -- PILL -- */
+.pill{
+  display:inline-block;padding:3px 10px;border-radius:20px;
+  font-size:.64rem;letter-spacing:1.5px;font-weight:700;text-transform:uppercase;
+}
+.on    {background:rgba(0,245,196,.13);color:var(--accent);border:1px solid rgba(0,245,196,.35);}
+.off   {background:rgba(255,255,255,.04);color:var(--muted);border:1px solid var(--border);}
+.warn  {background:rgba(255,176,58,.13);color:var(--warn);border:1px solid rgba(255,176,58,.35);}
+.danger{background:rgba(255,77,77,.15);color:var(--danger);border:1px solid rgba(255,77,77,.35);}
+.fire-pill{
+  background:rgba(255,60,0,.2);color:#ff6030;
+  border:1px solid rgba(255,60,0,.5);
+  animation:pillBlink .6s ease-in-out infinite alternate;
+}
+@keyframes pillBlink{from{opacity:.7}to{opacity:1}}
+.putoff-pill{background:rgba(0,200,255,.15);color:var(--accent2);border:1px solid rgba(0,200,255,.4);}
+.safe-pill{background:rgba(0,245,196,.13);color:var(--accent);border:1px solid rgba(0,245,196,.35);}
+/* -- BUTTONS -- */
+.btn{
+  border:none;outline:none;cursor:pointer;border-radius:9px;
+  font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.78rem;
+  letter-spacing:1.5px;padding:8px 14px;transition:all .18s;
+  text-transform:uppercase;width:100%;margin-top:9px;
+}
+.b-off{background:rgba(255,255,255,.05);color:var(--muted);border:1px solid var(--border);}
+.b-off:hover{background:rgba(255,255,255,.09);color:var(--text);}
+.b-on {background:linear-gradient(135deg,rgba(0,245,196,.2),rgba(0,200,255,.15));color:var(--accent);border:1px solid rgba(0,245,196,.4);}
+.b-on:hover{background:linear-gradient(135deg,rgba(0,245,196,.3),rgba(0,200,255,.22));}
+.b-disarm{background:rgba(255,176,58,.15);color:var(--warn);border:1px solid rgba(255,176,58,.4);}
+.b-disarm:hover{background:rgba(255,176,58,.25);}
+.b-locked{background:rgba(255,77,77,.08);color:var(--muted);border:1px solid rgba(255,77,77,.2);cursor:default;}
+.b-purple{background:rgba(167,139,250,.15);color:var(--accent3);border:1px solid rgba(167,139,250,.4);}
+.b-purple:hover{background:rgba(167,139,250,.25);}
+.b-danger{background:rgba(255,77,77,.15);color:var(--danger);border:1px solid rgba(255,77,77,.4);}
+.b-danger:hover{background:rgba(255,77,77,.25);}
+.b-wht{background:rgba(220,235,255,.1);color:#cce8ff;border:1px solid rgba(200,220,255,.3);}
+.b-wht:hover{background:rgba(220,235,255,.2);}
+.b-wht-on{background:linear-gradient(135deg,rgba(200,220,255,.25),rgba(255,255,255,.15));
+  color:#ffffff;border:1px solid rgba(220,235,255,.5);
+  box-shadow:0 0 16px rgba(200,220,255,.4);}
+.btn:active:not(.b-locked){transform:scale(.97);}
+/* -- ROOM GRID -- */
+.rgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+.rb{
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  padding:13px 6px;border-radius:12px;border:1px solid var(--border);
+  background:linear-gradient(145deg,var(--card2),rgba(22,31,48,.5));
+  cursor:pointer;transition:all .2s;
+  font-weight:700;font-size:.75rem;letter-spacing:1px;color:var(--muted);
+}
+.rb.on{
+  background:linear-gradient(145deg,rgba(0,245,196,.12),rgba(0,200,255,.08));
+  border-color:rgba(0,245,196,.4);color:var(--accent);
+  box-shadow:0 0 14px rgba(0,245,196,.2);
+}
+.rb:active{transform:scale(.96);}
+.ri{font-size:1.5rem;}
+/* -- SETPOINT -- */
+.sp{display:flex;align-items:center;gap:7px;margin-top:9px;}
+.sp label{font-size:.64rem;color:var(--muted);letter-spacing:1px;flex:1;line-height:1.3;}
+.sp input[type=number]{
+  background:var(--card2);border:1px solid var(--border);
+  color:var(--text);border-radius:7px;padding:5px 7px;width:64px;
+  font-family:'Share Tech Mono',monospace;font-size:.85rem;outline:none;
+}
+.sp input:focus{border-color:var(--accent);box-shadow:0 0 8px rgba(0,245,196,.2);}
+.spbtn{
+  background:linear-gradient(135deg,rgba(0,245,196,.15),rgba(0,200,255,.1));
+  color:var(--accent);border:1px solid rgba(0,245,196,.35);
+  padding:5px 12px;border-radius:7px;cursor:pointer;
+  font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.75rem;
+  letter-spacing:1px;text-transform:uppercase;transition:all .18s;
+}
+.spbtn:hover{background:linear-gradient(135deg,rgba(0,245,196,.25),rgba(0,200,255,.17));}
+.spbtn:active{transform:scale(.96);}
+/* -- GATE -- */
+.gate-box{
+  width:100%;height:76px;border-radius:12px;display:flex;align-items:center;
+  justify-content:center;font-size:2.5rem;margin:9px 0;transition:.35s;
+  border:2px solid var(--border);
+  background:linear-gradient(145deg,rgba(255,255,255,.02),transparent);
+}
+.gate-box.open{
+  border-color:var(--accent);box-shadow:var(--glow);
+  background:linear-gradient(145deg,rgba(0,245,196,.08),rgba(0,200,255,.04));
+}
+/* -- TEMP -- */
+.tbig{font-size:2.6rem;font-weight:700;font-family:'Share Tech Mono',monospace;line-height:1;}
+.tbig .deg{font-size:1rem;vertical-align:super;color:var(--accent);}
+.tf{font-size:.88rem;color:var(--muted);margin-top:3px;font-family:'Share Tech Mono',monospace;}
+/* -- POWER -- */
+.pg{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+.pl{font-size:.58rem;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px;}
+.pv{font-size:1.25rem;font-weight:700;font-family:'Share Tech Mono',monospace;color:var(--accent2);}
+.pu{font-size:.62rem;color:var(--muted);}
+/* -- ENERGY -- */
+.er{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.ec{flex:1;min-width:80px;}
+.ev{
+  font-size:1.45rem;font-weight:700;font-family:'Share Tech Mono',monospace;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.cv{
+  font-size:1.45rem;font-weight:700;font-family:'Share Tech Mono',monospace;
+  background:linear-gradient(135deg,#ffb03a,#ffe066);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+/* -- ALERT BANNERS -- */
+#ab{
+  display:none;position:fixed;top:60px;left:50%;transform:translateX(-50%);
+  z-index:200;
+  background:linear-gradient(90deg,rgba(255,77,77,.97),rgba(180,20,20,.97));
+  color:#fff;padding:10px 28px;border-radius:30px;font-weight:700;
+  letter-spacing:2.5px;font-size:.8rem;white-space:nowrap;
+  box-shadow:0 0 40px rgba(255,77,77,.6);animation:drop .3s ease;
+}
+#fire-banner{
+  display:none;position:fixed;top:108px;left:50%;transform:translateX(-50%);
+  z-index:199;
+  background:linear-gradient(90deg,rgba(255,50,0,.97),rgba(200,80,0,.97));
+  color:#fff;padding:10px 28px;border-radius:30px;font-weight:700;
+  letter-spacing:2.5px;font-size:.8rem;white-space:nowrap;
+  box-shadow:0 0 50px rgba(255,80,0,.7);
+}
+@keyframes drop{from{top:38px;opacity:0}to{top:60px;opacity:1}}
+/* -- SECTION LABEL / DIVIDER -- */
+.section-label{padding:6px 20px 2px;font-size:.6rem;letter-spacing:3px;color:rgba(0,245,196,.4);text-transform:uppercase;}
+.divider{height:1px;background:linear-gradient(90deg,transparent,rgba(0,245,196,.2),rgba(0,200,255,.2),transparent);margin:4px 20px 0;}
+/* -- FIRE PROGRESS BAR -- */
+.fire-bar-wrap{width:100%;height:5px;background:rgba(255,255,255,.06);border-radius:3px;margin-top:10px;overflow:hidden;}
+.fire-bar{height:100%;border-radius:3px;transition:width .5s linear;background:linear-gradient(90deg,#ff3c00,#ffaa00);}
+.blue-bar{background:linear-gradient(90deg,var(--accent2),var(--accent));}
+/* -- WHITE LED DOT -- */
+.wled-dot{width:10px;height:10px;border-radius:50%;display:inline-block;
+  background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);vertical-align:middle;margin-right:6px;transition:.3s;}
+.wled-dot.on{background:#ffffff;box-shadow:0 0 12px rgba(255,255,255,.8);}
+/* =======================================
+   SECURITY TAB  --  PIN MANAGER
+======================================= */
+.sec-grid{display:grid;gap:14px;padding:16px 20px;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));}
+.pin-status-row{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
+.pin-lock-icon{font-size:2.2rem;}
+.pin-toggle-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.tog{position:relative;width:42px;height:22px;}
+.tog input{opacity:0;width:0;height:0;}
+.tog-slider{position:absolute;inset:0;border-radius:22px;cursor:pointer;background:rgba(255,255,255,.08);border:1px solid var(--border);transition:.3s;}
+.tog-slider::before{content:'';position:absolute;height:16px;width:16px;left:3px;top:2px;border-radius:50%;background:var(--muted);transition:.3s;}
+.tog input:checked+.tog-slider{background:linear-gradient(135deg,rgba(167,139,250,.35),rgba(0,200,255,.25));border-color:rgba(167,139,250,.5);}
+.tog input:checked+.tog-slider::before{transform:translateX(20px);background:var(--accent3);box-shadow:0 0 8px rgba(167,139,250,.6);}
+.pin-dots{display:flex;gap:12px;justify-content:center;margin:18px 0 10px;}
+.dot{width:18px;height:18px;border-radius:50%;border:2px solid rgba(167,139,250,.4);background:transparent;transition:.2s;}
+.dot.filled{background:var(--accent3);border-color:var(--accent3);box-shadow:0 0 10px rgba(167,139,250,.5);}
+.keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px;}
+.kbtn{
+  border:1px solid var(--border);border-radius:10px;
+  background:linear-gradient(145deg,var(--card2),var(--card));
+  color:var(--text);font-family:'Share Tech Mono',monospace;font-size:1.1rem;
+  font-weight:700;padding:13px 0;cursor:pointer;transition:all .15s;text-align:center;
+}
+.kbtn:hover{background:linear-gradient(145deg,rgba(167,139,250,.15),rgba(0,200,255,.1));border-color:rgba(167,139,250,.35);color:var(--accent3);box-shadow:0 0 12px rgba(167,139,250,.2);}
+.kbtn:active{transform:scale(.94);}
+.kbtn.k-del{color:var(--warn);border-color:rgba(255,176,58,.25);}
+.kbtn.k-del:hover{background:rgba(255,176,58,.12);border-color:rgba(255,176,58,.4);}
+.kbtn.k-clr{color:var(--danger);border-color:rgba(255,77,77,.25);}
+.kbtn.k-clr:hover{background:rgba(255,77,77,.1);border-color:rgba(255,77,77,.4);}
+.pin-msg{text-align:center;font-size:.72rem;font-weight:700;letter-spacing:1.5px;min-height:20px;margin-top:4px;transition:.3s;}
+.pin-msg.ok{color:var(--accent);}
+.pin-msg.err{color:var(--danger);}
+.pin-msg.warn{color:var(--warn);}
+.step-label{font-size:.62rem;letter-spacing:2px;color:var(--accent3);text-transform:uppercase;text-align:center;margin-bottom:4px;}
+.pin-info{background:rgba(167,139,250,.06);border:1px solid rgba(167,139,250,.18);border-radius:10px;padding:12px;margin-top:10px;font-size:.7rem;color:var(--muted);letter-spacing:.8px;line-height:1.7;}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-thumb{background:linear-gradient(var(--accent),var(--accent2));border-radius:2px;}
+.footer{text-align:center;padding:13px;font-size:.6rem;letter-spacing:2.5px;border-top:1px solid rgba(0,245,196,.08);margin-top:8px;background:linear-gradient(90deg,transparent,rgba(0,245,196,.04),transparent);color:var(--muted);position:relative;z-index:5;}
+@media(max-width:480px){
+  .grid,.sec-grid{grid-template-columns:1fr 1fr;gap:9px;padding:9px;}
+  .span2{grid-column:span 2;}
+  .tbig{font-size:1.9rem;}
+  .pv{font-size:1rem;}
+  .tabbar{padding:8px 8px 0;gap:2px;}
+  .tab{padding:6px 10px;font-size:.65rem;letter-spacing:1px;}
+}
+</style>
+</head>
+<body>
+
+<!-- PIN GATE OVERLAY: shown when PIN protection is enabled -->
+<div id="pin-gate">
+  <div class="pg-box">
+    <div class="pg-logo">G5 Smart Home</div>
+    <div class="pg-sub">Residential Automation Controller</div>
+    <div class="pg-icon">&#128274;</div>
+    <div class="pg-title">Enter PIN to Access</div>
+    <div class="pg-dots">
+      <div class="dot" id="gd0"></div>
+      <div class="dot" id="gd1"></div>
+      <div class="dot" id="gd2"></div>
+      <div class="dot" id="gd3"></div>
+    </div>
+    <div class="pg-msg" id="pg-msg"></div>
+    <div class="pg-kp">
+      <button class="pgk" onclick="gkp('1')">1</button>
+      <button class="pgk" onclick="gkp('2')">2</button>
+      <button class="pgk" onclick="gkp('3')">3</button>
+      <button class="pgk" onclick="gkp('4')">4</button>
+      <button class="pgk" onclick="gkp('5')">5</button>
+      <button class="pgk" onclick="gkp('6')">6</button>
+      <button class="pgk" onclick="gkp('7')">7</button>
+      <button class="pgk" onclick="gkp('8')">8</button>
+      <button class="pgk" onclick="gkp('9')">9</button>
+      <button class="pgk pgk-clr" onclick="gclr()">CLR</button>
+      <button class="pgk" onclick="gkp('0')">0</button>
+      <button class="pgk pgk-del" onclick="gdel()">&#9003;</button>
+    </div>
+  </div>
+</div>
+
+<div id="fire-overlay"></div>
+<div id="ab">&#9888;&#65039; MOTION DETECTED</div>
+<div id="fire-banner">&#128293; FIRE DETECTED &#128293;</div>
+
+<header class="hdr">
+  <div>
+    <div class="logo">G5 Smart Home HMI</div>
+    <div class="sub">Residential Automation Controller</div>
+  </div>
+  <div class="hdr-r">
+    <span class="wdot" id="wd"></span>
+    <span class="ip-badge" id="ip">---.---</span>
+    <span class="clk" id="clk">--:--:--</span>
+  </div>
+</header>
+
+<div class="tabbar">
+  <div class="tab active" id="tab-dashboard" onclick="showTab('dashboard')">&#127968; Dashboard</div>
+  <div class="tab tab-sec" id="tab-security" onclick="showTab('security')">&#128737; System Security</div>
+</div>
+<div class="divider"></div>
+
+<!-- DASHBOARD TAB -->
+<div class="tabcontent active" id="tc-dashboard">
+<div class="grid">
+
+  <div class="card" id="c-env">
+    <div class="ct">&#127777; Environment</div>
+    <div class="ir">
+      <span class="ico" id="env-ico">&#x26C5;</span>
+      <div>
+        <div class="tbig" id="tc">--<span class="deg">&deg;C</span></div>
+        <div class="tf" id="tf">-- &deg;F</div>
+      </div>
+    </div>
+    <div style="font-size:.85rem;margin-bottom:7px;">
+      &#128167; <span id="hum" style="font-family:'Share Tech Mono',monospace;">--%</span> RH
+    </div>
+    <span class="pill" id="dht-pill">Initialising</span>
+  </div>
+
+  <div class="card" id="c-sec">
+    <div class="ct">&#128272; Security</div>
+    <div class="ir">
+      <span class="ico" id="pir-ico">&#128249;</span>
+      <div>
+        <span class="pill" id="pir-pill">Standby</span>
+        <div style="font-size:.65rem;color:var(--muted);margin-top:5px;">PIR &middot; GPIO13</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+      <span id="buz-ico" style="font-size:1.1rem;">&#128277;</span>
+      <span class="pill" id="buz-pill">Silent</span>
+    </div>
+    <button class="btn" id="disarm-btn" onclick="disarmAlarm()">&#128275; Disarm Alarm</button>
+    <div id="disarm-info" style="font-size:.6rem;color:var(--muted);margin-top:5px;letter-spacing:.8px;">
+      Silences buzzer &mdash; re-arms in 10 s
+    </div>
+  </div>
+
+  <div class="card" id="c-fire">
+    <div class="ct">&#128293; Fire Safety</div>
+    <div class="ir">
+      <span class="ico" id="fire-ico">&#9989;</span>
+      <div>
+        <span class="pill safe-pill" id="fire-pill">Safe</span>
+        <div style="font-size:.65rem;color:var(--muted);margin-top:5px;" id="fire-sub">No fire detected</div>
+      </div>
+    </div>
+    <div class="fire-bar-wrap" id="fire-bar-wrap" style="display:none;">
+      <div class="fire-bar" id="fire-bar" style="width:100%;"></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap;">
+      <div style="font-size:.62rem;color:var(--muted);letter-spacing:1px;">STATUS LEDs</div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <span id="led-r" style="font-size:.9rem;">&#128308;</span>
+        <span id="led-g" style="font-size:.9rem;">&#128994;</span>
+        <span id="led-b" style="font-size:.9rem;">&#128309;</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="c-wht">
+    <div class="ct">&#128267; Security Light</div>
+    <div class="ir">
+      <span class="ico" id="wht-ico">&#128267;</span>
+      <div>
+        <span class="pill" id="wht-pill">Off</span>
+        <div style="font-size:.65rem;color:var(--muted);margin-top:5px;">White LED &middot; GPIO22</div>
+      </div>
+    </div>
+    <button class="btn b-wht" id="wht-btn" onclick="toggleWhite()">&#128267; Turn On</button>
+  </div>
+
+  <div class="card" id="c-gate">
+    <div class="ct">&#127974; Gate</div>
+    <div class="gate-box" id="gate-box">&#128682;</div>
+    <span class="pill" id="gate-pill" style="display:inline-block;margin-bottom:8px;">Closed</span>
+    <button class="btn b-off" id="gate-btn" onclick="toggleGate()">Open Gate</button>
+  </div>
+
+  <div class="card span2" id="c-rooms">
+    <div class="ct">&#128161; Room Lighting</div>
+    <div class="rgrid">
+      <button class="rb" id="r-bedroom"  onclick="toggleRoom('bedroom')"><span class="ri">&#128716;</span><span>Bedroom</span></button>
+      <button class="rb" id="r-bathroom" onclick="toggleRoom('bathroom')"><span class="ri">&#128705;</span><span>Bathroom</span></button>
+      <button class="rb" id="r-kitchen"  onclick="toggleRoom('kitchen')"><span class="ri">&#127859;</span><span>Kitchen</span></button>
+      <button class="rb" id="r-living"   onclick="toggleRoom('living')"><span class="ri">&#128247;</span><span>Living Room</span></button>
+    </div>
+  </div>
+
+  <div class="card" id="c-heater">
+    <div class="ct">&#128293; Heater</div>
+    <div class="ir">
+      <span class="ico" id="heat-ico">&#9654;&#65039;</span>
+      <div>
+        <span class="pill" id="heat-pill">Off</span>
+        <div style="font-size:.65rem;color:var(--muted);margin-top:4px;">Auto &middot; GPIO23</div>
+      </div>
+    </div>
+    <div class="sp">
+      <label>ON BELOW<br>(&deg;C)</label>
+      <input type="number" id="heat-sp" value="18" step="0.5" min="5" max="35">
+      <button class="spbtn" onclick="setHVAC()">Set</button>
+    </div>
+  </div>
+
+  <div class="card" id="c-fan">
+    <div class="ct">&#127744; Fan / Cooler</div>
+    <div class="ir">
+      <span class="ico" id="fan-ico">&#127744;</span>
+      <div>
+        <span class="pill" id="fan-pill">Off</span>
+        <div style="font-size:.65rem;color:var(--muted);margin-top:4px;">Auto &middot; GPIO5</div>
+      </div>
+    </div>
+    <div class="sp">
+      <label>ON ABOVE<br>(&deg;C)</label>
+      <input type="number" id="cool-sp" value="28" step="0.5" min="15" max="45">
+      <button class="spbtn" onclick="setHVAC()">Set</button>
+    </div>
+  </div>
+
+  <div class="card" id="c-load">
+    <div class="ct">&#9889; Main Load</div>
+    <div class="ir">
+      <span class="ico" id="load-ico">&#128268;</span>
+      <div>
+        <span class="pill" id="load-pill">Off</span>
+        <div style="font-size:.65rem;color:var(--muted);margin-top:4px;">Relay &middot; GPIO4</div>
+      </div>
+    </div>
+    <button class="btn b-off" id="load-btn" onclick="toggleLoad()">Turn On</button>
+  </div>
+
+  <div class="card" id="c-power">
+    <div class="ct">&#128200; Power Metrics</div>
+    <div class="pg">
+      <div><div class="pl">Voltage</div><div class="pv" id="vd">0.00 <span class="pu">V</span></div></div>
+      <div><div class="pl">Current</div><div class="pv" id="id">0.000 <span class="pu">A</span></div></div>
+      <div><div class="pl">Power</div><div class="pv" id="pd">0.00 <span class="pu">W</span></div></div>
+      <div><div class="pl">Uptime</div><div class="pv" id="up" style="font-size:.95rem;">0s</div></div>
+    </div>
+  </div>
+
+  <div class="card" id="c-energy">
+    <div class="ct">&#9889; Energy &amp; Cost</div>
+    <div class="er">
+      <div class="ec">
+        <div class="pl">Energy Used</div>
+        <div class="ev" id="ed">0.000</div>
+        <div class="pu" id="eu">mWh</div>
+      </div>
+      <div class="ec">
+        <div class="pl">Est. Cost</div>
+        <div class="cv" id="cd">0.0000</div>
+        <div class="pu" style="color:var(--warn);">KSH</div>
+      </div>
+    </div>
+    <div style="font-size:.58rem;color:var(--muted);margin-top:8px;letter-spacing:.7px;">
+      &#9432; Counted only while Main Load active. Never resets.
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- SYSTEM SECURITY TAB -->
+<div class="tabcontent" id="tc-security">
+<div class="sec-grid">
+
+  <div class="card g-purple" id="c-pin-status">
+    <div class="ct">&#128737; PIN Protection</div>
+    <div class="pin-status-row">
+      <span class="pin-lock-icon" id="pin-status-icon">&#128274;</span>
+      <div>
+        <div style="font-size:1rem;font-weight:700;color:var(--text);" id="pin-status-text">PIN Disabled</div>
+        <div style="font-size:.65rem;color:var(--muted);margin-top:3px;" id="pin-status-sub">No PIN is currently set</div>
+      </div>
+    </div>
+    <div class="pin-toggle-row">
+      <span style="font-size:.72rem;letter-spacing:1px;color:var(--muted);">ENABLE PIN PROTECTION</span>
+      <label class="tog">
+        <input type="checkbox" id="pin-enable-tog" onchange="pinToggleChanged()">
+        <span class="tog-slider"></span>
+      </label>
+    </div>
+    <div class="pin-info">
+      &#8505;&#65039; A 4-digit PIN adds an extra layer of protection to this HMI.
+      When enabled, any browser visiting this IP must enter the PIN before
+      accessing the dashboard. PIN is saved to flash and survives reboots.
+    </div>
+  </div>
+
+  <div class="card" id="c-pin-keypad">
+    <div class="ct">&#9000;&#65039; PIN Keypad</div>
+    <div class="step-label" id="kp-step-label">Enter Current PIN</div>
+    <div class="pin-dots" id="pin-dots">
+      <div class="dot" id="pd0"></div>
+      <div class="dot" id="pd1"></div>
+      <div class="dot" id="pd2"></div>
+      <div class="dot" id="pd3"></div>
+    </div>
+    <div class="pin-msg" id="pin-msg"></div>
+    <div class="keypad">
+      <button class="kbtn" onclick="kp('1')">1</button>
+      <button class="kbtn" onclick="kp('2')">2</button>
+      <button class="kbtn" onclick="kp('3')">3</button>
+      <button class="kbtn" onclick="kp('4')">4</button>
+      <button class="kbtn" onclick="kp('5')">5</button>
+      <button class="kbtn" onclick="kp('6')">6</button>
+      <button class="kbtn" onclick="kp('7')">7</button>
+      <button class="kbtn" onclick="kp('8')">8</button>
+      <button class="kbtn" onclick="kp('9')">9</button>
+      <button class="kbtn k-clr" onclick="kpClear()">CLR</button>
+      <button class="kbtn" onclick="kp('0')">0</button>
+      <button class="kbtn k-del" onclick="kpDel()">&#9003;</button>
+    </div>
+  </div>
+
+  <div class="card" id="c-pin-actions">
+    <div class="ct">&#9881;&#65039; PIN Actions</div>
+    <div style="margin-bottom:14px;">
+      <div style="font-size:.65rem;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;">Set / Change PIN</div>
+      <button class="btn b-purple" onclick="startSetPin()">&#128273; Set New PIN</button>
+    </div>
+    <div style="margin-bottom:14px;">
+      <div style="font-size:.65rem;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;">Verify Current PIN</div>
+      <button class="btn b-on" onclick="startVerifyPin()">&#10003; Verify PIN</button>
+    </div>
+    <div>
+      <div style="font-size:.65rem;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;">Remove PIN</div>
+      <button class="btn b-danger" onclick="startRemovePin()">&#128465;&#65039; Remove PIN</button>
+    </div>
+    <div class="pin-info" style="margin-top:14px;">
+      <b style="color:var(--accent3);">Default factory PIN:</b> 0000<br>
+      PIN must be exactly 4 digits (0&ndash;9).<br>
+      Consecutive failed attempts lock the keypad for 30 s.
+    </div>
+  </div>
+
+</div>
+</div>
+
+<div class="footer">G5 SMART HOME HMI &nbsp;&bull;&nbsp; ESP32 NodeMCU-32S &nbsp;&bull;&nbsp; MicroPython</div>
+
+<script>
+// =====================================================================
+//  PIN GATE OVERLAY  (server-backed, session cookie auth)
+// =====================================================================
+var _gBuf='', _gFails=0, _gLock=0;
+
+function _gdots(b){
+  for(var i=0;i<4;i++) document.getElementById('gd'+i).className='dot'+(i<b.length?' filled':'');
+}
+function _gmsg(t){ document.getElementById('pg-msg').textContent=t; }
+
+function gkp(d){
+  if(Date.now()<_gLock){_gmsg('Locked - wait '+Math.ceil((_gLock-Date.now())/1000)+' s');return;}
+  if(_gBuf.length>=4) return;
+  _gBuf+=d; _gdots(_gBuf);
+  if(_gBuf.length===4) setTimeout(_gsubmit,200);
+}
+function gdel(){ _gBuf=_gBuf.slice(0,-1); _gdots(_gBuf); }
+function gclr(){ _gBuf=''; _gdots(''); }
+
+function _gsubmit(){
+  var p=_gBuf; _gBuf=''; _gdots('');
+  fetch('/pin/login?p='+p)
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d.ok){
+        document.getElementById('pin-gate').classList.remove('show');
+        _gFails=0; _gmsg('');
+        fetchState();
+      } else {
+        _gFails++;
+        if(_gFails>=5){ _gLock=Date.now()+30000; _gFails=0; _gmsg('Too many attempts - locked 30 s'); }
+        else _gmsg('Wrong PIN ('+(5-_gFails)+' left)');
+      }
+    })
+    .catch(function(){ _gmsg('Connection error'); });
+}
+
+// On page load: ask server if PIN gate should be shown
+fetch('/pin/status')
+  .then(function(r){return r.json();})
+  .then(function(d){ if(d.en && d.set) document.getElementById('pin-gate').classList.add('show'); })
+  .catch(function(){});
+
+// =====================================================================
+//  DASHBOARD LOGIC
+// =====================================================================
+var gateOpen=false, loadOn=false, disarmedState=false, alertTO=null;
+var rooms={bedroom:0,bathroom:0,kitchen:0,living:0};
+var whiteOn=false;
+
+function g(id){ return document.getElementById(id); }
+function pill(id,txt,cls){ var e=g(id); e.textContent=txt; e.className='pill '+cls; }
+
+function showAlert(){
+  var b=g('ab'); b.style.display='block';
+  clearTimeout(alertTO);
+  alertTO=setTimeout(function(){b.style.display='none';},5000);
+}
+
+// -- FIRE UI STATE MACHINE --
+var _prevFireState='';
+var PUTOFF_DUR=5000, BLUE_DUR=20000;
+
+function updateFireUI(d){
+  var fs=d.fire_state;
+  var fc=g('c-fire'), fi=g('fire-ico'), fp=g('fire-pill'), fsub=g('fire-sub');
+  var overlay=g('fire-overlay'), banner=g('fire-banner');
+  var bwrap=g('fire-bar-wrap'), bar=g('fire-bar');
+  var redOn=(fs==='fire'), grnOn=(fs==='safe'), bluOn=(fs==='putoff'||fs==='cooldown');
+  g('led-r').style.opacity=redOn?'1':'0.18';
+  g('led-g').style.opacity=grnOn?'1':'0.18';
+  g('led-b').style.opacity=bluOn?'1':'0.18';
+  if(fs==='fire'){
+    fc.className='card g-fire';
+    fi.textContent='\uD83D\uDD25'; fi.className='ico fire-dance';
+    fp.textContent='FIRE!'; fp.className='pill fire-pill';
+    fsub.textContent='Fire detected \u2014 take action!';
+    overlay.style.display='block'; banner.style.display='block';
+    banner.textContent='\uD83D\uDD25 FIRE DETECTED \uD83D\uDD25';
+    banner.style.background='linear-gradient(90deg,rgba(255,50,0,.97),rgba(200,80,0,.97))';
+    bwrap.style.display='block'; bar.className='fire-bar';
+    bar.style.width='100%'; bar.style.transition='none';
+  } else if(fs==='putoff'){
+    fc.className='card g-putoff';
+    fi.textContent='\uD83D\uDCA7'; fi.className='ico';
+    fp.textContent='PUTTING OUT'; fp.className='pill putoff-pill';
+    fsub.textContent='Fire cleared \u2014 confirming\u2026';
+    overlay.style.display='none'; banner.style.display='block';
+    banner.textContent='\uD83D\uDCA7 Fire put off \u2014 cooldown 20s';
+    banner.style.background='linear-gradient(90deg,rgba(0,100,200,.97),rgba(0,150,200,.97))';
+    bwrap.style.display='block'; bar.className='fire-bar blue-bar';
+    if(_prevFireState!=='putoff'&&_prevFireState!=='cooldown'){
+      bar.style.transition='none'; bar.style.width='100%';
+      setTimeout(function(){ bar.style.transition='width '+BLUE_DUR+'ms linear'; bar.style.width='0%'; },50);
+    }
+  } else if(fs==='cooldown'){
+    fc.className='card g-blue';
+    fi.textContent='\uD83D\uDCA7'; fi.className='ico';
+    fp.textContent='COOLING DOWN'; fp.className='pill putoff-pill';
+    fsub.textContent='Area cooling \u2014 blue LED active';
+    overlay.style.display='none'; banner.style.display='block';
+    banner.textContent='\uD83D\uDCA7 Cooling down\u2026';
+    banner.style.background='linear-gradient(90deg,rgba(0,100,200,.97),rgba(0,150,200,.97))';
+    bwrap.style.display='block'; bar.className='fire-bar blue-bar';
+  } else {
+    fc.className='card g-green';
+    fi.textContent='\u2705'; fi.className='ico';
+    fp.textContent=d.fire_ever?'CLEARED':'Safe'; fp.className='pill safe-pill';
+    fsub.textContent=d.fire_ever?'Area cleared \u2014 green LED':'No fire detected';
+    overlay.style.display='none'; banner.style.display='none'; bwrap.style.display='none';
+  }
+  _prevFireState=fs;
+}
+
+function updateUI(d){
+  g('wd').className='wdot'+(d.wifi_connected?'':' off');
+  g('ip').textContent=d.ip||'---';
+
+  if(d.dht_ok){
+    g('tc').innerHTML=d.temp_c.toFixed(1)+'<span class="deg">\u00b0C</span>';
+    g('tf').textContent=d.temp_f.toFixed(1)+' \u00b0F';
+    g('hum').textContent=Math.min(100,Math.max(0,Math.round(d.humidity)))+'%';
+    pill('dht-pill','OK','on'); g('c-env').className='card g-green';
+    var t=d.temp_c;
+    g('env-ico').textContent=t>34?'\uD83C\uDF1E':t>27?'\u2600\uFE0F':t>20?'\u26C5':t>12?'\uD83C\uDF2B':'\u2744\uFE0F';
+  } else {
+    g('tc').innerHTML='--<span class="deg">\u00b0C</span>';
+    g('tf').textContent='-- \u00b0F'; g('hum').textContent='--%';
+    pill('dht-pill','Sensor Err','danger'); g('c-env').className='card';
+  }
+
+  disarmedState=d.alarm_disarmed;
+  var mot=d.motion;
+  if(mot){
+    g('pir-ico').textContent='\uD83D\uDEA8'; g('pir-ico').className='ico throb';
+    pill('pir-pill','MOTION!','danger'); g('c-sec').className='card g-red'; showAlert();
+  } else {
+    g('pir-ico').textContent='\uD83D\uDCF9'; g('pir-ico').className='ico';
+    pill('pir-pill','Standby','off');
+    if(!disarmedState) g('c-sec').className='card';
+  }
+  if(d.buzzer_on){ g('buz-ico').textContent='\uD83D\uDD14'; pill('buz-pill','Buzzing','warn'); }
+  else { g('buz-ico').textContent='\uD83D\uDD15'; pill('buz-pill','Silent','off'); }
+  var db=g('disarm-btn'), di=g('disarm-info');
+  if(disarmedState){
+    db.className='btn b-locked'; db.textContent='\uD83D\uDD13 Alarm Disarmed';
+    di.textContent='Re-arms automatically in ~10 s';
+    if(!mot) g('c-sec').className='card g-warn';
+  } else {
+    db.className='btn b-disarm'; db.textContent='\uD83D\uDD13 Disarm Alarm';
+    di.textContent='Silences buzzer \u2014 re-arms in 10 s';
+  }
+
+  updateFireUI(d);
+
+  whiteOn=d.white_light===1;
+  var wico=g('wht-ico'), wbtn=g('wht-btn'), wcard=g('c-wht');
+  if(whiteOn){
+    wico.textContent='\uD83D\uDCA1'; wico.className='ico';
+    pill('wht-pill','ON','on'); wbtn.textContent='\uD83D\uDCA1 Turn Off'; wbtn.className='btn b-wht-on';
+    wcard.className='card g-green';
+  } else {
+    wico.textContent='\uD83D\uDD26'; wico.className='ico';
+    pill('wht-pill','Off','off'); wbtn.textContent='\uD83D\uDD26 Turn On'; wbtn.className='btn b-wht';
+    wcard.className='card';
+  }
+
+  gateOpen=d.gate_open;
+  var gb=g('gate-box');
+  if(gateOpen){
+    gb.textContent='\uD83D\uDD13'; gb.className='gate-box open';
+    pill('gate-pill','Open','on');
+    g('gate-btn').textContent='Close Gate'; g('gate-btn').className='btn b-on';
+    g('c-gate').className='card g-green';
+  } else {
+    gb.textContent='\uD83D\uDD12'; gb.className='gate-box';
+    pill('gate-pill','Closed','off');
+    g('gate-btn').textContent='Open Gate'; g('gate-btn').className='btn b-off';
+    g('c-gate').className='card';
+  }
+
+  ['bedroom','bathroom','kitchen','living'].forEach(function(r){
+    rooms[r]=d.rooms[r]; g('r-'+r).className='rb'+(d.rooms[r]?' on':'');
+  });
+
+  if(d.heater_on){
+    g('heat-ico').textContent='\uD83D\uDD25'; pill('heat-pill','Heating','warn'); g('c-heater').className='card g-warn';
+  } else {
+    g('heat-ico').textContent='\u25B6\uFE0F'; pill('heat-pill','Off','off'); g('c-heater').className='card';
+  }
+
+  if(d.fan_on){
+    g('fan-ico').textContent='\uD83D\uDCA8'; g('fan-ico').className='ico spin';
+    pill('fan-pill','Running','on'); g('c-fan').className='card g-blue';
+  } else {
+    g('fan-ico').textContent='\uD83C\uDF00'; g('fan-ico').className='ico';
+    pill('fan-pill','Off','off'); g('c-fan').className='card';
+  }
+
+  loadOn=d.main_load===1;
+  if(loadOn){
+    g('load-ico').textContent='\uD83D\uDD0C'; pill('load-pill','Active','on');
+    g('load-btn').textContent='Turn Off'; g('load-btn').className='btn b-on';
+    g('c-load').className='card g-green';
+  } else {
+    g('load-ico').textContent='\uD83D\uDD0B'; pill('load-pill','Off','off');
+    g('load-btn').textContent='Turn On'; g('load-btn').className='btn b-off';
+    g('c-load').className='card';
+  }
+
+  g('vd').innerHTML=d.voltage.toFixed(2)+' <span class="pu">V</span>';
+  g('id').innerHTML=d.current.toFixed(3)+' <span class="pu">A</span>';
+  var pw=d.power_w;
+  if(pw<0.001){ g('pd').innerHTML=(pw*1e6).toFixed(1)+' <span class="pu">\u00b5W</span>'; }
+  else if(pw<1){ g('pd').innerHTML=(pw*1000).toFixed(2)+' <span class="pu">mW</span>'; }
+  else { g('pd').innerHTML=pw.toFixed(3)+' <span class="pu">W</span>'; }
+
+  var s=d.uptime_s, h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sec=s%60;
+  g('up').textContent=(h?h+'h ':'')+m+'m '+sec+'s';
+
+  var ewh=d.energy_wh, eEl=g('ed'), euEl=g('eu');
+  if(ewh===0||ewh<1e-9){eEl.textContent='0.000';euEl.textContent='mWh';}
+  else if(ewh<1e-3){eEl.textContent=(ewh*1e6).toFixed(3);euEl.textContent='\u00b5Wh';}
+  else if(ewh<1){eEl.textContent=(ewh*1000).toFixed(3);euEl.textContent='mWh';}
+  else{eEl.textContent=ewh.toFixed(4);euEl.textContent='Wh';}
+
+  var c=d.cost_ksh;
+  g('cd').textContent=c<0.001?(c*100).toFixed(5)+' s':c.toFixed(4);
+}
+
+function fetchState(){
+  fetch('/state')
+    .then(function(r){
+      if(r.status===401){ document.getElementById('pin-gate').classList.add('show'); return null; }
+      return r.json();
+    })
+    .then(function(d){ if(d) updateUI(d); })
+    .catch(function(){});
+}
+function cmd(q){
+  fetch('/cmd?'+q)
+    .then(function(r){
+      if(r.status===401){ document.getElementById('pin-gate').classList.add('show'); return null; }
+      return r.json();
+    })
+    .then(function(d){ if(d) updateUI(d); })
+    .catch(function(){});
+}
+
+function toggleGate(){ cmd('gate='+(gateOpen?'0':'1')); }
+function toggleRoom(r){ cmd('room='+r+'&val='+(rooms[r]?'0':'1')); }
+function toggleLoad(){ cmd('load='+(loadOn?'0':'1')); }
+function setHVAC(){ cmd('heat_sp='+g('heat-sp').value+'&cool_sp='+g('cool-sp').value); }
+function disarmAlarm(){ if(!disarmedState) cmd('disarm=1'); }
+function toggleWhite(){ cmd('white='+(whiteOn?'0':'1')); }
+
+function tickClock(){
+  var n=new Date();
+  g('clk').textContent=[n.getHours(),n.getMinutes(),n.getSeconds()]
+    .map(function(v){return String(v).padStart(2,'0');}).join(':');
+}
+
+setInterval(fetchState,1500);
+setInterval(tickClock,1000);
+fetchState(); tickClock();
+
+// =====================================================================
+//  TAB SWITCHING
+// =====================================================================
+function showTab(name){
+  ['dashboard','security'].forEach(function(t){
+    g('tab-'+t).className='tab'+(t==='security'?' tab-sec':'')+(t===name?' active':'');
+    g('tc-'+t).className='tabcontent'+(t===name?' active':'');
+  });
+  if(name==='security') refreshPinStatus();
+}
+
+// =====================================================================
+//  SECURITY TAB  --  PIN MANAGER
+//  PIN is stored server-side (hmi_pin.txt on flash).
+//  JS holds _sysPIN in memory only after the user types it once per session.
+//  All changes call /pin/save to persist immediately to flash.
+// =====================================================================
+var MAX_FAILS=3, LOCK_SEC=30;
+var _sysPIN=null, _pinEnabled=false, _pinLockUntil=0, _pinFailCount=0;
+var KP_MODE='idle', kpBuffer='', kpNewPin='', msgTO=null;
+
+function pinMsg(txt,cls){
+  var el=g('pin-msg'); el.textContent=txt; el.className='pin-msg '+(cls||'');
+  clearTimeout(msgTO);
+  if(txt) msgTO=setTimeout(function(){el.textContent='';el.className='pin-msg';},3500);
+}
+
+function updateDots(buf){
+  for(var i=0;i<4;i++) g('pd'+i).className='dot'+(i<buf.length?' filled':'');
+}
+
+function kpReset(mode,label){
+  kpBuffer=''; kpNewPin=''; KP_MODE=mode||'idle';
+  updateDots(''); g('kp-step-label').textContent=label||''; pinMsg('');
+}
+
+function kp(digit){
+  if(KP_MODE==='idle') return;
+  if(Date.now()<_pinLockUntil){
+    pinMsg('Locked \u2014 wait '+Math.ceil((_pinLockUntil-Date.now())/1000)+' s','err'); return;
+  }
+  if(kpBuffer.length>=4) return;
+  kpBuffer+=digit; updateDots(kpBuffer);
+  if(kpBuffer.length===4) setTimeout(function(){evalPin(kpBuffer);},200);
+}
+function kpDel(){ kpBuffer=kpBuffer.slice(0,-1); updateDots(kpBuffer); }
+function kpClear(){ kpBuffer=''; updateDots(''); }
+
+// Persist current _sysPIN + _pinEnabled to server flash
+function _persistPin(){
+  var q='en='+(_pinEnabled?'1':'0');
+  if(_sysPIN) q+='&p='+_sysPIN;
+  fetch('/pin/save?'+q).catch(function(){});
+}
+
+function evalPin(entered){
+  if(KP_MODE==='pre_set_verify'){
+    if(entered===_sysPIN){
+      _pinFailCount=0; kpBuffer=''; updateDots('');
+      KP_MODE='set_new'; g('kp-step-label').textContent='Enter New PIN';
+      pinMsg('Verified \u2014 enter new PIN','ok');
+    } else { handleFail(); }
+    return;
+  }
+  if(KP_MODE==='verify'){
+    if(entered===_sysPIN){ _pinFailCount=0; pinMsg('\u2713 PIN Correct','ok'); kpReset('idle',''); }
+    else handleFail();
+  } else if(KP_MODE==='set_new'){
+    kpNewPin=entered; kpBuffer=''; updateDots('');
+    KP_MODE='set_confirm'; g('kp-step-label').textContent='Confirm New PIN';
+    pinMsg('Re-enter PIN to confirm','warn');
+  } else if(KP_MODE==='set_confirm'){
+    if(entered===kpNewPin){
+      _sysPIN=entered; _pinEnabled=true;
+      g('pin-enable-tog').checked=true;
+      _persistPin();
+      pinMsg('\u2713 PIN set \u2014 saved to flash','ok');
+      kpReset('idle',''); refreshPinStatus();
+    } else {
+      pinMsg('PINs do not match \u2014 try again','err');
+      kpBuffer=''; updateDots(''); KP_MODE='set_new'; kpNewPin='';
+      g('kp-step-label').textContent='Enter New PIN';
+    }
+  } else if(KP_MODE==='remove_verify'){
+    if(entered===_sysPIN){
+      _sysPIN=null; _pinEnabled=false;
+      g('pin-enable-tog').checked=false;
+      _persistPin();
+      pinMsg('\u2713 PIN removed \u2014 saved to flash','ok');
+      kpReset('idle',''); refreshPinStatus();
+    } else { handleFail(); }
+  }
+}
+
+function handleFail(){
+  _pinFailCount++;
+  if(_pinFailCount>=MAX_FAILS){
+    _pinLockUntil=Date.now()+LOCK_SEC*1000; _pinFailCount=0;
+    pinMsg('Too many attempts \u2014 locked '+LOCK_SEC+' s','err');
+  } else {
+    pinMsg('Incorrect PIN ('+(MAX_FAILS-_pinFailCount)+' left)','err');
+  }
+  kpBuffer=''; updateDots('');
+}
+
+function startVerifyPin(){
+  if(!_sysPIN){ pinMsg('No PIN set yet','warn'); return; }
+  kpReset('verify','Verify Current PIN');
+}
+function startSetPin(){
+  if(_sysPIN) kpReset('pre_set_verify','Enter Current PIN to Change');
+  else kpReset('set_new','Enter New PIN');
+}
+function startRemovePin(){
+  if(!_sysPIN){ pinMsg('No PIN to remove','warn'); return; }
+  kpReset('remove_verify','Enter PIN to Confirm Removal');
+}
+
+function pinToggleChanged(){
+  var tog=g('pin-enable-tog');
+  if(tog.checked && !_sysPIN){
+    tog.checked=false; kpReset('set_new','Enter New PIN');
+    pinMsg('Set a PIN to enable protection','warn');
+  } else if(!tog.checked && _sysPIN){
+    kpReset('remove_verify','Enter PIN to Disable');
+  } else {
+    _pinEnabled=tog.checked;
+    _persistPin();
+    refreshPinStatus();
+  }
+}
+
+function refreshPinStatus(){
+  var tog=g('pin-enable-tog');
+  tog.checked=_pinEnabled&&(_sysPIN!==null);
+  if(_sysPIN && _pinEnabled){
+    g('pin-status-icon').textContent='\uD83D\uDD12';
+    g('pin-status-text').textContent='PIN Enabled';
+    g('pin-status-text').style.color='var(--accent)';
+    g('pin-status-sub').textContent='Visitors must enter PIN \u2014 saved to flash';
+    g('c-pin-status').className='card g-purple';
+  } else if(_sysPIN && !_pinEnabled){
+    g('pin-status-icon').textContent='\uD83D\uDD13';
+    g('pin-status-text').textContent='PIN Set but Disabled';
+    g('pin-status-text').style.color='var(--warn)';
+    g('pin-status-sub').textContent='PIN saved to flash but protection is off';
+    g('c-pin-status').className='card g-warn';
+  } else {
+    g('pin-status-icon').textContent='\uD83D\uDD13';
+    g('pin-status-text').textContent='PIN Disabled';
+    g('pin-status-text').style.color='var(--muted)';
+    g('pin-status-sub').textContent='No PIN is currently set';
+    g('c-pin-status').className='card';
+  }
+}
+
+refreshPinStatus();
+</script>
+</body>
+</html>
